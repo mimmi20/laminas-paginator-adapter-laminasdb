@@ -1,8 +1,9 @@
 # laminas-paginator-adapter-laminasdb
 
-[![Build Status](https://github.com/laminas/laminas-paginator-adapter-laminasdb/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/laminas/laminas-paginator-adapter-laminasdb/actions/workflows/continuous-integration.yml)
-[![type-coverage](https://shepherd.dev/github/laminas/laminas-paginator-adapter-laminasdb/coverage.svg)](https://shepherd.dev/github/laminas/laminas-paginator-adapter-laminasdb)
-[![Psalm level](https://shepherd.dev/github/laminas/laminas-paginator-adapter-laminasdb/level.svg)](https://shepherd.dev/github/laminas/laminas-paginator-adapter-laminasdb)
+> [!CAUTION]
+> This package is **abandoned** and will receive no further development.
+>
+> See the Technical Steering Committee [meeting minutes](https://github.com/laminas/technical-steering-committee/blob/main/meetings/minutes/2024-11-04-TSC-Minutes.md#archive--abandon-various-legacy-libraries).
 
 > ## 🇷🇺 Русским гражданам
 >
@@ -38,8 +39,3 @@ $ composer require laminas/laminas-paginator-adapter-laminasdb
 ## Documentation
 
 Browse the documentation online at https://docs.laminas.dev/laminas-paginator-adapter-laminasdb/
-
-## Support
-
-- [Issues](https://github.com/laminas/laminas-paginator-adapter-laminasdb/issues/)
-- [Forum](https://discourse.laminas.dev/)
