@@ -1,6 +1,6 @@
 # Introduction
 
-This library provides two adapters for [laminas/laminas-paginator](https://docs.laminas.dev/lmainas-paginator):
+This library provides two adapters for [laminas/laminas-paginator](https://docs.laminas.dev/laminas-paginator):
 
 - `Laminas\Paginator\Adapter\LaminasDb\DbSelect`
 - `Laminas\Paginator\Adapter\LaminasDb\DbTableGateway`

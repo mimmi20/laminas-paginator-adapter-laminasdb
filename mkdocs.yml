@@ -6,7 +6,7 @@ nav:
       - Introduction: v1/intro.md
       - "DbSelect Adapter": v1/db-select.md
       - "DbTableGateway Adapter": v1/db-table-gateway.md
-site_name: 'laminas-paginator-adapter-laminasdb'
+site_name: 'laminas-paginator-adapter-laminasdb (Abandoned)'
 site_description: 'laminas-db adapters for laminas-paginator'
 repo_url: 'https://github.com/laminas/laminas-paginator-adapter-laminasdb'
 extra:
