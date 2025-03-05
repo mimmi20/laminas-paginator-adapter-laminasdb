@@ -13,9 +13,9 @@ TableGateway features.
 Run the following to install this library:
 
 ```bash
-$ composer require mimmi20/laminas-paginator-adapter-laminasdb
+composer require mimmi20/laminas-paginator-adapter-laminasdb
 ```
 
 ## Documentation
 
-Browse the documentation online at https://docs.laminas.dev/laminas-paginator-adapter-laminasdb/
+Browse the documentation online at <https://docs.laminas.dev/laminas-paginator-adapter-laminasdb/>
