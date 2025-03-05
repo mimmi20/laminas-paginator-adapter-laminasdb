@@ -1,77 +1,76 @@
 <?php
 
-declare(strict_types=1);
+/**
+ * This file is part of the mimmi20/laminas-paginator-adapter-laminasdb package.
+ *
+ * Copyright (c) 2020-2025 Laminas Project a Series of LF Projects, LLC. (https://getlaminas.org/)
+ * Copyright (c) 2025, Thomas Mueller <mimmi20@live.de>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+declare(strict_types = 1);
 
 namespace Laminas\Paginator\Adapter\LaminasDb;
 
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\ResultSet\ResultSet;
 use Laminas\Db\ResultSet\ResultSetInterface;
+use Laminas\Db\Sql\Exception\InvalidArgumentException;
 use Laminas\Db\Sql\Expression;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Sql;
 use Laminas\Paginator\Adapter\AdapterInterface;
 use Laminas\Paginator\Adapter\Exception\MissingRowCountColumnException;
-use Laminas\Paginator\Exception;
-use ReturnTypeWillChange;
 
 use function array_key_exists;
+use function assert;
+use function is_array;
 use function iterator_to_array;
-use function strtolower;
+use function mb_strtolower;
 
+/**
+ * @phpcs:disable SlevomatCodingStandard.Classes.RequireAbstractOrFinal.ClassNeitherAbstractNorFinal
+ * @template-covariant TKey of int
+ * @template-covariant TValue
+ * @implements AdapterInterface<TKey, TValue>
+ */
 class DbSelect implements AdapterInterface
 {
+    /** @api */
     public const ROW_COUNT_COLUMN_NAME = 'C';
 
-    /** @var Sql */
-    protected $sql;
+    private readonly Sql $sql;
 
-    /**
-     * Database query
-     *
-     * @var Select
-     */
-    protected $select;
-
-    /**
-     * Database count query
-     *
-     * @var Select|null
-     */
-    protected $countSelect;
-
-    /** @var ResultSetInterface */
-    protected $resultSetPrototype;
+    /** @var ResultSetInterface<mixed> */
+    private readonly ResultSetInterface $resultSetPrototype;
 
     /**
      * Total item count
      *
-     * @var int|null
+     * @var int<0, max>|null
      */
-    protected $rowCount;
+    private int | null $rowCount = null;
 
     /**
-     * @param Select $select The select query
-     * @param Adapter|Sql $adapterOrSqlObject DB adapter or Sql object
-     * @throws Exception\InvalidArgumentException
+     * @param Select                         $select             The select query
+     * @param Adapter|Sql                    $adapterOrSqlObject DB adapter or Sql object
+     * @param ResultSetInterface<mixed>|null $resultSetPrototype
+     *
+     * @throws void
      */
     public function __construct(
-        Select $select,
-        $adapterOrSqlObject,
-        ?ResultSetInterface $resultSetPrototype = null,
-        ?Select $countSelect = null
+        private readonly Select $select,
+        Adapter | Sql $adapterOrSqlObject,
+        ResultSetInterface | null $resultSetPrototype = null,
+        /**
+         * Database count query
+         */
+        private readonly Select | null $countSelect = null,
     ) {
-        $this->select      = $select;
-        $this->countSelect = $countSelect;
-
         if ($adapterOrSqlObject instanceof Adapter) {
             $adapterOrSqlObject = new Sql($adapterOrSqlObject);
-        }
-
-        if (! $adapterOrSqlObject instanceof Sql) {
-            throw new Exception\InvalidArgumentException(
-                '$adapterOrSqlObject must be an instance of Laminas\Db\Adapter\Adapter or Laminas\Db\Sql\Sql'
-            );
         }
 
         $this->sql                = $adapterOrSqlObject;
@@ -81,11 +80,16 @@ class DbSelect implements AdapterInterface
     /**
      * Returns an array of items for a page.
      *
-     * @param  int $offset           Page offset
-     * @param  int $itemCountPerPage Number of items per page
-     * @return array
+     * @param int $offset           Page offset
+     * @param int $itemCountPerPage Number of items per page
+     *
+     * @return array<int, mixed>
+     *
+     * @throws InvalidArgumentException
+     *
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
      */
-    public function getItems($offset, $itemCountPerPage)
+    public function getItems($offset, $itemCountPerPage): array
     {
         $select = clone $this->select;
         $select->offset($offset);
@@ -103,31 +107,56 @@ class DbSelect implements AdapterInterface
     /**
      * Returns the total number of rows in the result set.
      *
-     * @return int
+     * @return int<0, max>
+     *
      * @throws MissingRowCountColumnException
+     * @throws InvalidArgumentException
      */
-    #[ReturnTypeWillChange]
-    public function count()
+    public function count(): int
     {
         if ($this->rowCount !== null) {
             return $this->rowCount;
         }
 
-        $select         = $this->getSelectCount();
-        $statement      = $this->sql->prepareStatementForSqlObject($select);
-        $result         = $statement->execute();
-        $row            = $result->current();
+        $select    = $this->getSelectCount();
+        $statement = $this->sql->prepareStatementForSqlObject($select);
+        $result    = $statement->execute();
+        $row       = $result->current();
+        assert(is_array($row));
+
         $this->rowCount = $this->locateRowCount($row);
 
         return $this->rowCount;
     }
 
     /**
+     * @internal
+     *
+     * @see https://github.com/laminas/laminas-paginator/issues/3 Reference for creating an internal cache ID
+     *
+     * @return array{select: string, count_select: string}
+     *
+     * @throws InvalidArgumentException
+     *
+     * @api
+     * @todo The next major version should rework the entire caching of a paginator.
+     */
+    public function getArrayCopy(): array
+    {
+        return [
+            'select' => $this->sql->buildSqlString($this->select),
+            'count_select' => $this->sql->buildSqlString(
+                $this->getSelectCount(),
+            ),
+        ];
+    }
+
+    /**
      * Returns select query for count
      *
-     * @return Select
+     * @throws InvalidArgumentException
      */
-    protected function getSelectCount()
+    private function getSelectCount(): Select
     {
         if ($this->countSelect) {
             return $this->countSelect;
@@ -147,24 +176,10 @@ class DbSelect implements AdapterInterface
     }
 
     /**
-     * @internal
+     * @param array<string, int> $row
      *
-     * @see https://github.com/laminas/laminas-paginator/issues/3 Reference for creating an internal cache ID
+     * @return int<0, max>
      *
-     * @todo The next major version should rework the entire caching of a paginator.
-     * @return array
-     */
-    public function getArrayCopy()
-    {
-        return [
-            'select'       => $this->sql->buildSqlString($this->select),
-            'count_select' => $this->sql->buildSqlString(
-                $this->getSelectCount()
-            ),
-        ];
-    }
-
-    /**
      * @throws MissingRowCountColumnException
      */
     private function locateRowCount(array $row): int
@@ -173,7 +188,8 @@ class DbSelect implements AdapterInterface
             return (int) $row[self::ROW_COUNT_COLUMN_NAME];
         }
 
-        $lowerCaseColumnName = strtolower(self::ROW_COUNT_COLUMN_NAME);
+        $lowerCaseColumnName = mb_strtolower(self::ROW_COUNT_COLUMN_NAME);
+
         if (array_key_exists($lowerCaseColumnName, $row)) {
             return (int) $row[$lowerCaseColumnName];
         }

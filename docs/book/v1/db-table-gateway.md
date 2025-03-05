@@ -1,11 +1,14 @@
 # The DbTableGateway Adapter
 
-The `DbTableGateway` adapter allows you to provide a `Laminas\Db\TableGateway\AbstractTableGateway` extension for the purpose of both pulling a dataset and providing a count of results.
+The `DbTableGateway` adapter allows you to provide a `Laminas\Db\TableGateway\AbstractTableGateway` extension for the
+purpose of both pulling a dataset and providing a count of results.
 
 By default, it assumes you want to fetch all items from the table.
-However, the adapter also allows you to provide WHERE, ORDER BY, GROUP BY, and HAVING clauses (via `Laminas\Db\Sql\Predicate` instances) to refine your selection.
+However, the adapter also allows you to provide WHERE, ORDER BY, GROUP BY, and HAVING clauses (via
+`Laminas\Db\Sql\Predicate` instances) to refine your selection.
 
-The items returned by the adapter will be based on the `Laminas\Db\ResultSet\ResultSetInterface` result set prototype you associate with the table gateway.
+The items returned by the adapter will be based on the `Laminas\Db\ResultSet\ResultSetInterface` result set prototype
+you associate with the table gateway.
 
 ## Creating An Instance
 
@@ -22,15 +25,22 @@ public function __construct(
 ```
 
 The first argument is the `AbstractTableGateway` class extension representing the table you want to fetch results from.
-The second argument represents the WHERE criteria for filtering results; see the [laminas-db Where documentation](https://docs.laminas.dev/laminas-db/sql/#where-having) for details on what is accepted.
-The third argument represents the order in which results should be sorted; see the [laminas-db "order()" documentation](https://docs.laminas.dev/laminas-db/sql/#order) for details.
-The fourth argument represents how results should be grouped; see the [laminas-db Select documentation](https://docs.laminas.dev/laminas-db/sql/#select) for details.
-The fifth argument represents a HAVING clause, which is generally used when grouping records; see the [laminas-db Having documentation](https://docs.laminas.dev/laminas-db/sql/#where-having) for more details.
+The second argument represents the WHERE criteria for filtering results; see
+the [laminas-db Where documentation](https://docs.laminas.dev/laminas-db/sql/#where-having) for details on what is
+accepted.
+The third argument represents the order in which results should be sorted; see
+the [laminas-db "order()" documentation](https://docs.laminas.dev/laminas-db/sql/#order) for details.
+The fourth argument represents how results should be grouped; see
+the [laminas-db Select documentation](https://docs.laminas.dev/laminas-db/sql/#select) for details.
+The fifth argument represents a HAVING clause, which is generally used when grouping records; see
+the [laminas-db Having documentation](https://docs.laminas.dev/laminas-db/sql/#where-having) for more details.
 
 ### Using the AdapterPluginManager
 
-By default, when pulling the `Laminas\Paginator\AdapterPluginManager` from the application DI container, it is aware of the `DbTableGateway` adapter.
-You can retrieve an instance from the plugin manager via its `get()` method, passing any constructor arguments you want to provide via an array as the second argument:
+By default, when pulling the `Laminas\Paginator\AdapterPluginManager` from the application DI container, it is aware of
+the `DbTableGateway` adapter.
+You can retrieve an instance from the plugin manager via its `get()` method, passing any constructor arguments you want
+to provide via an array as the second argument:
 
 ```php
 use Laminas\Paginator\AdapterPluginManager;
@@ -43,14 +53,19 @@ $pluginManager = $container->get(AdapterPluginManager::class);
 $adapter = $pluginManager->get(DbTableGateway::class, [$table]);
 ```
 
-All required arguments to the constructor must be passed in the array, and they will be passed in the same order to the constructor.
+All required arguments to the constructor must be passed in the array, and they will be passed in the same order to the
+constructor.
 
 ## Counting Total Items
 
-The `DbTableGateway` adapter extends the [DbSelect adapter](db-select.md); during instatiation, it retrieves both the base `Laminas\Db\Sql\Sql` instance and composed `Laminas\Db\ResultSet\ResultSetInterface` prototype composed in the table gateway, creates a `Laminas\Db\Sql\Select` instance, and passes all three to the parent constructor.
+The `DbTableGateway` adapter extends the [DbSelect adapter](db-select.md); during instatiation, it retrieves both the
+base `Laminas\Db\Sql\Sql` instance and composed `Laminas\Db\ResultSet\ResultSetInterface` prototype composed in the
+table gateway, creates a `Laminas\Db\Sql\Select` instance, and passes all three to the parent constructor.
 The `Select` instance is thus used as the basis for the count operation as well.
 
-Because there is no way to provide an alternate `Select` for counting, you have two options: extend the `DbTableGateway` adapter and override the `count()` method, or create your `Select` instances for fetching items and the count and pass them to the `DbSelect` constructor instead.
+Because there is no way to provide an alternate `Select` for counting, you have two options: extend the `DbTableGateway`
+adapter and override the `count()` method, or create your `Select` instances for fetching items and the count and pass
+them to the `DbSelect` constructor instead.
 
 ### Overriding the Count Method
 
@@ -90,7 +105,9 @@ $adapter = new MyDbTableGateway($tableGateway);
 
 ### Creating Select Statements to Pass to a DbSelect Adapter
 
-The following demonstrates pulling the `Sql` instance associated with the `TableGateway` instance, using it to create `Select` instances for pulling items and generating a count, and then using all of them together to create a `DbSelect` instance.
+The following demonstrates pulling the `Sql` instance associated with the `TableGateway` instance, using it to create
+`Select` instances for pulling items and generating a count, and then using all of them together to create a `DbSelect`
+instance.
 
 ```php
 use Laminas\Paginator\Adapter\LaminasDb\DbSelect;

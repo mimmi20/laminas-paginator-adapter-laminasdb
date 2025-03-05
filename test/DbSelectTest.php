@@ -1,6 +1,16 @@
 <?php
 
-declare(strict_types=1);
+/**
+ * This file is part of the mimmi20/laminas-paginator-adapter-laminasdb package.
+ *
+ * Copyright (c) 2020-2025 Laminas Project a Series of LF Projects, LLC. (https://getlaminas.org/)
+ * Copyright (c) 2025, Thomas Mueller <mimmi20@live.de>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+declare(strict_types = 1);
 
 namespace LaminasTest\Paginator\Adapter\LaminasDb;
 
@@ -9,154 +19,192 @@ use Laminas\Db\Adapter\Driver\DriverInterface;
 use Laminas\Db\Adapter\Driver\ResultInterface;
 use Laminas\Db\Adapter\Driver\StatementInterface;
 use Laminas\Db\Adapter\Platform\PlatformInterface;
+use Laminas\Db\Sql\Exception\InvalidArgumentException;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Sql;
 use Laminas\Paginator\Adapter\Exception\MissingRowCountColumnException;
 use Laminas\Paginator\Adapter\LaminasDb\DbSelect;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 use function array_keys;
-use function strtolower;
+use function mb_strtolower;
 
-/**
- * @covers Laminas\Paginator\Adapter\LaminasDb\DbSelect<extended>
- */
-class DbSelectTest extends TestCase
+#[CoversClass(DbSelect::class)]
+final class DbSelectTest extends TestCase
 {
-    /** @var MockObject|Select */
-    protected $mockSelect;
+    protected MockObject & Select $mockSelect;
+    protected MockObject & Select $mockSelectCount;
+    protected MockObject & StatementInterface $mockStatement;
+    protected MockObject & ResultInterface $mockResult;
+    protected MockObject & Sql $mockSql;
 
-    /** @var MockObject|Select */
-    protected $mockSelectCount;
+    /** @var DbSelect<int, mixed> */
+    protected DbSelect $dbSelect;
 
-    /** @var MockObject|StatementInterface */
-    protected $mockStatement;
-
-    /** @var MockObject|ResultInterface */
-    protected $mockResult;
-
-    /** @var MockObject|Sql */
-    protected $mockSql;
-
-    /** @var DbSelect */
-    protected $dbSelect;
-
-    public function setUp(): void
+    /** @throws Exception */
+    protected function setUp(): void
     {
-        $this->mockResult    = $this->createMock(ResultInterface::class);
+        $this->mockResult = $this->createMock(ResultInterface::class);
+
         $this->mockStatement = $this->createMock(StatementInterface::class);
+        $this->mockStatement
+            ->expects(self::any())
+            ->method('execute')
+            ->willReturn($this->mockResult);
 
-        $this->mockStatement->expects($this->any())->method('execute')->will($this->returnValue($this->mockResult));
+        $mockDriver = $this->createMock(DriverInterface::class);
+        $mockDriver
+            ->expects(self::any())
+            ->method('createStatement')
+            ->willReturn($this->mockStatement);
 
-        $mockDriver   = $this->createMock(DriverInterface::class);
         $mockPlatform = $this->createMock(PlatformInterface::class);
+        $mockPlatform
+            ->expects(self::any())
+            ->method('getName')
+            ->willReturn('platform');
 
-        $mockDriver->expects($this->any())->method('createStatement')->will($this->returnValue($this->mockStatement));
-        $mockPlatform->expects($this->any())->method('getName')->will($this->returnValue('platform'));
+        $mockAdapter = $this->getMockBuilder(Adapter::class)
+            ->setConstructorArgs([$mockDriver, $mockPlatform])
+            ->onlyMethods([])
+            ->getMock();
 
         $this->mockSql = $this->getMockBuilder(Sql::class)
-            ->setMethods(['prepareStatementForSqlObject', 'execute'])
-            ->setConstructorArgs(
-                [
-                    $this->getMockForAbstractClass(
-                        Adapter::class,
-                        [$mockDriver, $mockPlatform]
-                    ),
-                ]
-            )->getMock();
-
+            ->onlyMethods(['prepareStatementForSqlObject'])
+            ->setConstructorArgs([$mockAdapter])
+            ->getMock();
         $this->mockSql
-            ->expects($this->any())
+            ->expects(self::any())
             ->method('prepareStatementForSqlObject')
-            ->with($this->isInstanceOf(Select::class))
-            ->will($this->returnValue($this->mockStatement));
+            ->with(self::isInstanceOf(Select::class))
+            ->willReturn($this->mockStatement);
 
         $this->mockSelect      = $this->createMock(Select::class);
         $this->mockSelectCount = $this->createMock(Select::class);
-        $this->dbSelect        = new DbSelect($this->mockSelect, $this->mockSql);
+
+        $this->dbSelect = new DbSelect($this->mockSelect, $this->mockSql);
     }
 
+    /**
+     * @throws Exception
+     * @throws InvalidArgumentException
+     */
     public function testGetItems(): void
     {
-        $this->mockSelect->expects($this->once())->method('limit')->with($this->equalTo(10));
-        $this->mockSelect->expects($this->once())->method('offset')->with($this->equalTo(2));
+        $this->mockSelect
+            ->expects(self::once())
+            ->method('limit')
+            ->with(10);
+
+        $this->mockSelect
+            ->expects(self::once())
+            ->method('offset')
+            ->with(2);
+
         $items = $this->dbSelect->getItems(2, 10);
-        $this->assertEquals([], $items);
+        self::assertSame([], $items);
     }
 
+    /**
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws MissingRowCountColumnException
+     */
     public function testCount(): void
     {
         $this->mockResult
-            ->expects($this->once())
+            ->expects(self::once())
             ->method('current')
-            ->will($this->returnValue([DbSelect::ROW_COUNT_COLUMN_NAME => 5]));
+            ->willReturn([DbSelect::ROW_COUNT_COLUMN_NAME => 5]);
 
-        $this->mockSelect->expects($this->exactly(3))->method('reset'); // called for columns, limit, offset, order
+        $this->mockSelect
+            ->expects(self::exactly(3))
+            // called for columns, limit, offset, order
+            ->method('reset');
 
         $count = $this->dbSelect->count();
-        $this->assertEquals(5, $count);
+        self::assertSame(5, $count);
     }
 
+    /**
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws MissingRowCountColumnException
+     */
     public function testCountQueryWithLowerColumnNameShouldReturnValidResult(): void
     {
         $this->dbSelect = new DbSelect($this->mockSelect, $this->mockSql);
         $this->mockResult
-            ->expects($this->once())
+            ->expects(self::once())
             ->method('current')
-            ->will($this->returnValue([strtolower(DbSelect::ROW_COUNT_COLUMN_NAME) => 7]));
+            ->willReturn([mb_strtolower(DbSelect::ROW_COUNT_COLUMN_NAME) => 7]);
 
         $count = $this->dbSelect->count();
-        $this->assertEquals(7, $count);
+        self::assertSame(7, $count);
     }
 
+    /**
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws MissingRowCountColumnException
+     */
     public function testCountQueryWithMissingColumnNameShouldRaiseException(): void
     {
         $this->dbSelect = new DbSelect($this->mockSelect, $this->mockSql);
         $this->mockResult
-            ->expects($this->once())
+            ->expects(self::once())
             ->method('current')
-            ->will($this->returnValue([]));
+            ->willReturn([]);
 
         $this->expectException(MissingRowCountColumnException::class);
         $this->dbSelect->count();
     }
 
+    /**
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws MissingRowCountColumnException
+     */
     public function testCustomCount(): void
     {
         $this->dbSelect = new DbSelect($this->mockSelect, $this->mockSql, null, $this->mockSelectCount);
         $this->mockResult
-            ->expects($this->once())
+            ->expects(self::once())
             ->method('current')
-            ->will($this->returnValue([DbSelect::ROW_COUNT_COLUMN_NAME => 7]));
+            ->willReturn([DbSelect::ROW_COUNT_COLUMN_NAME => 7]);
 
         $count = $this->dbSelect->count();
-        $this->assertEquals(7, $count);
+        self::assertSame(7, $count);
     }
 
     /**
-     * @group 6817
-     * @group 6812
+     * @throws Exception
+     * @throws InvalidArgumentException
      */
+    #[Group('6812')]
+    #[Group('6817')]
     public function testReturnValueIsArray(): void
     {
-        $this->assertIsArray($this->dbSelect->getItems(0, 10));
+        self::assertIsArray($this->dbSelect->getItems(0, 10));
     }
 
+    /**
+     * @throws Exception
+     * @throws InvalidArgumentException
+     */
     public function testGetArrayCopyShouldContainSelectItems(): void
     {
-        $this->dbSelect = new DbSelect(
-            $this->mockSelect,
-            $this->mockSql,
-            null,
-            $this->mockSelectCount
-        );
-        $this->assertSame(
+        $this->dbSelect = new DbSelect($this->mockSelect, $this->mockSql, null, $this->mockSelectCount);
+        self::assertSame(
             [
                 'select',
                 'count_select',
             ],
-            array_keys($this->dbSelect->getArrayCopy())
+            array_keys($this->dbSelect->getArrayCopy()),
         );
     }
 }
