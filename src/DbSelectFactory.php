@@ -18,13 +18,14 @@ use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\ResultSet\ResultSetInterface;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Sql;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Psr\Container\ContainerInterface;
 
 use function assert;
 use function count;
 use function is_a;
 
-final class DbSelectFactory
+final class DbSelectFactory implements FactoryInterface
 {
     /**
      * @param string                                                                              $requestedName

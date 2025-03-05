@@ -21,13 +21,14 @@ use Laminas\Db\Sql\Predicate\PredicateInterface;
 use Laminas\Db\Sql\Predicate\PredicateSet;
 use Laminas\Db\Sql\Where;
 use Laminas\Db\TableGateway\AbstractTableGateway;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Psr\Container\ContainerInterface;
 
 use function assert;
 use function count;
 use function is_a;
 
-final class DbTableGatewayFactory
+final class DbTableGatewayFactory implements FactoryInterface
 {
     /**
      * @param string                                                                                                                                                                                                                                                                                                                                                                                                 $requestedName
