@@ -20,7 +20,7 @@ $config = new Configuration();
 $config
     // Adjusting scanned paths
     ->addPathToScan(__DIR__ . '/src', isDev: false)
-    ->addPathToScan(__DIR__ . '/tests', isDev: true)
+    ->addPathToScan(__DIR__ . '/test', isDev: true)
     ->addPathToScan(__DIR__ . '/vendor', isDev: false)
     ->addPathToExclude(__DIR__ . '/vendor/rector/rector')
     ->addPathToExclude(__DIR__ . '/vendor/phpstan/phpstan')
