@@ -37,6 +37,10 @@ updates:
       include: "scope"
       prefix: "composer"
 
+    ignore:
+      - dependency-name: "symfony/process"
+        versions: ">=7.0.0"
+
     rebase-strategy: "auto"
 
   - package-ecosystem: "github-actions"
